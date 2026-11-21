@@ -50,15 +50,21 @@ unlocks with `defer`, so it is atomic with respect to the others; colloquially t
 The invariant (in this example: the balances add up to the deposits) may be broken inside a method, but holds whenever
 the lock is free. Unlocking a mutex happens before the next lock of it returns
 ([memory visibility](../concepts/memory-visibility.md#unlock-before-lock)), so each method sees every write of the
-methods that held the lock before it.
+methods that held the lock before it. The monitor must own its state: `newBank` copies the map it is given, because
+a map the caller kept could be changed without the lock ([a shallow copy shares nested
+values](../concepts/confinement.md#shallow-copy), which does not matter here as the values are integers).
 
-<!-- code: patterns/monitor#bank:doc patterns/monitor#bank.transfer:doc patterns/monitor#bank.total patterns/monitor#Example_monitor:main -->
+<!-- code: patterns/monitor#bank:doc patterns/monitor#newBank patterns/monitor#bank.transfer:doc patterns/monitor#bank.total patterns/monitor#Example_monitor:main -->
 ```go
 // bank owns its balances and the mutex that guards them. Every access goes through a method that holds the lock.
 // Invariant, whenever mu is free: the balances add up to the amount deposited.
 type bank struct {
 	balances map[string]int
 	mu       sync.Mutex
+}
+
+func newBank(balances map[string]int) *bank {
+	return &bank{balances: maps.Clone(balances)}
 }
 
 // transfer moves amount from one account to another if the source has enough. Both changes happen under one lock,

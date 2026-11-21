@@ -51,8 +51,10 @@ type tagged struct {
 var errFull = errors.New("watermark: buffer full")
 
 // merge emits the events of inputs in event-time order. Each input must send its messages in non-decreasing
-// event time. An event is emitted once the watermark, the least latest time over the open inputs, has reached
-// it. More than limit waiting events is an error.
+// event time, so no input sends an event before its latest time. An event is emitted once the watermark, the
+// least latest time over the open inputs, has passed it: an event at the watermark could still tie with a later
+// one, and ties come out by input. When every input has closed, all waiting events are emitted. More than limit
+// waiting events is an error.
 func merge(ctx context.Context, inputs []<-chan message, limit int, emit func(message)) error {
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -93,7 +95,7 @@ func merge(ctx context.Context, inputs []<-chan message, limit int, emit func(me
 		}
 
 		wm, ok := watermark(latest, open)
-		for ok && len(waiting) > 0 && waiting[0].msg.at <= wm {
+		for ok && len(waiting) > 0 && (open == 0 || waiting[0].msg.at < wm) {
 			emit(waiting[0].msg)
 			waiting = waiting[1:]
 		}
@@ -106,8 +108,8 @@ func merge(ctx context.Context, inputs []<-chan message, limit int, emit func(me
 	return nil
 }
 
-// watermark returns the least latest time over the open inputs. It is not known while an open input has not
-// sent anything. When no input is open, every event is due.
+// watermark returns the least latest time over the open inputs: no open input sends an event before it. It is not
+// known while an open input has not sent anything.
 func watermark(latest map[int]int, open int) (int, bool) {
 	if len(latest) < open {
 		return 0, false

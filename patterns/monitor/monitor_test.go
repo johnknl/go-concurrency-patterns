@@ -117,6 +117,19 @@ func TestBank_transfer(t *testing.T) {
 	})
 }
 
+func TestNewBank(t *testing.T) {
+	t.Run("does not share the caller's map", func(t *testing.T) {
+		balances := map[string]int{"a": 100}
+		b := newBank(balances)
+
+		balances["a"] = 0 // the caller changes its own map without the lock
+
+		if got, want := b.balance("a"), 100; got != want {
+			t.Errorf("a = %d, want %d", got, want)
+		}
+	})
+}
+
 func TestBank_total(t *testing.T) {
 	if got := newBank(map[string]int{}).total(); got != 0 {
 		t.Errorf("empty total = %d, want 0", got)

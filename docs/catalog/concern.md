@@ -24,7 +24,7 @@ Making a fast producer wait for a slow consumer.
 | [Bounded Queue](../patterns/bounded-queue.md) | Pattern | Let a producer run ahead of its consumer by a fixed, chosen amount. |
 | [Overload Policy](../concepts/overload-policy.md) | Concept | Decide deliberately what happens when a limit is reached, trading loss, latency, and memory. |
 | [Pipeline](../patterns/pipeline.md) | Pattern | Process a stream in independent steps that run at the same time, each handing its output to the next. |
-| [Spill Queue](../patterns/spill-queue.md) | Pattern | Absorb a backlog that briefly exceeds what memory should hold, without blocking the producer and without dropping items. |
+| [Spill Queue](../patterns/spill-queue.md) | Pattern | Absorb a backlog that briefly exceeds what memory should hold, without making the producer wait for the consumer and without dropping items. |
 | [Worker Pool](../patterns/worker-pool.md) | Pattern | Process any number of jobs with a fixed amount of concurrency. |
 
 ## Bounded concurrency { #concern-bounded-concurrency }
@@ -61,7 +61,7 @@ Making sure that every goroutine can end.
 
 | Page | Type | Intent |
 |---|---|---|
-| [Channel Ownership](../concepts/channel-ownership.md) | Concept | Give every channel one owner that alone sends the last value and closes it, so a close is never raced or repeated. |
+| [Channel Ownership](../concepts/channel-ownership.md) | Concept | Give every channel one owner, the single sender or the closer that coordinates several, so that a close comes after the last send and is never raced or repeated. |
 | [Close with Cause](../patterns/close-with-cause.md) | Pattern | Tell the receivers of a closed channel why it was closed. |
 | [Cooperative Cancellation](../concepts/cooperative-cancellation.md) | Concept | Stop work whose result is no longer needed by having the work itself check a signal and return, leaving state consistent. |
 | [Goroutine Leak Prevention](../concepts/goroutine-leak-prevention.md) | Concept | Give every goroutine an owner that is responsible for its end, and a way to end that does not depend on a peer that may have left. |
@@ -76,7 +76,7 @@ Sharing or handing over data without races.
 | Page | Type | Intent |
 |---|---|---|
 | [Active Object](../patterns/active-object.md) | Pattern | Run all operations on an object one at a time, in the order they arrive, while callers either continue or wait for the result. |
-| [Channel Ownership](../concepts/channel-ownership.md) | Concept | Give every channel one owner that alone sends the last value and closes it, so a close is never raced or repeated. |
+| [Channel Ownership](../concepts/channel-ownership.md) | Concept | Give every channel one owner, the single sender or the closer that coordinates several, so that a close comes after the last send and is never raced or repeated. |
 | [Compare-and-Swap Loop](../patterns/compare-and-swap-loop.md) | Pattern | Update a single shared value from its old value without making other writers wait. |
 | [Condition Variable](../stdlib/condition-variable.md) | Standard library | Let goroutines wait until a condition on shared state holds, and wake them when it may have changed. |
 | [Confinement](../concepts/confinement.md) | Concept | Keep data reachable from only one goroutine at a time, so it needs no synchronization. |
@@ -168,7 +168,7 @@ Restoring or deciding the order of values that arrive out of order.
 |---|---|---|
 | [Ordering](../concepts/ordering.md) | Concept | Which orders between values a concurrent design preserves, which it loses, and what restoring a lost order costs. |
 | [Resequencer](../patterns/resequencer.md) | Pattern | Consume results in input order when concurrent work delivers them out of order. |
-| [Spill Queue](../patterns/spill-queue.md) | Pattern | Absorb a backlog that briefly exceeds what memory should hold, without blocking the producer and without dropping items. |
+| [Spill Queue](../patterns/spill-queue.md) | Pattern | Absorb a backlog that briefly exceeds what memory should hold, without making the producer wait for the consumer and without dropping items. |
 | [State Machine](../patterns/state-machine.md) | Pattern | Change a stateful object only in steps that are legal for its current state, so that the same events in the same order always lead to the same state. |
 | [Watermark](../patterns/watermark.md) | Pattern | Act on events in the order of their timestamps when they arrive from several inputs at different speeds, without guessing how long to wait for the slower ones. |
 

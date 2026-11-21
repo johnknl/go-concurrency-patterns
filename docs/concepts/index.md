@@ -8,7 +8,7 @@ link to the specific property they depend on instead of repeating it.
 | Page | Summary |
 |---|---|
 | [Backpressure](backpressure.md) | Let the consumer's remaining capacity limit the producer's rate, so a faster producer slows down instead of piling up work. |
-| [Channel Ownership](channel-ownership.md) | Give every channel one owner that alone sends the last value and closes it, so a close is never raced or repeated. |
+| [Channel Ownership](channel-ownership.md) | Give every channel one owner, the single sender or the closer that coordinates several, so that a close comes after the last send and is never raced or repeated. |
 | [Confinement](confinement.md) | Keep data reachable from only one goroutine at a time, so it needs no synchronization. |
 | [Cooperative Cancellation](cooperative-cancellation.md) | Stop work whose result is no longer needed by having the work itself check a signal and return, leaving state consistent. |
 | [Determinism](determinism.md) | A computation is deterministic when the same starting state and the same inputs, in the same order, always produce the same result. |

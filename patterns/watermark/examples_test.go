@@ -63,7 +63,8 @@ func Example_merge() {
 }
 
 // Example_punctuation shows an input without events that sends a punctuation instead, so the events of the
-// other input are emitted while both inputs stay open.
+// other input that lie before the watermark, 3, are emitted while both inputs stay open. The event at 4 is
+// emitted when the inputs close.
 func Example_punctuation() {
 	a := make(chan message)
 	idle := make(chan message)
@@ -72,7 +73,7 @@ func Example_punctuation() {
 	go func() {
 		defer close(a)
 
-		for _, at := range []int{1, 2, 3} {
+		for _, at := range []int{1, 2, 3, 4} {
 			a <- message{at: at, value: "a"}
 		}
 		<-seen
@@ -97,6 +98,7 @@ func Example_punctuation() {
 	// 1 a
 	// 2 a
 	// 3 a
+	// 4 a
 	// err: <nil>
 }
 

@@ -82,7 +82,7 @@ Mutexes, condition variables, wait groups, once, and pools from `sync`.
 | [Request Racing](../patterns/request-racing.md) | Get the fastest answer from several equivalent replicas and stop the others. |
 | [Resource Pool](../patterns/resource-pool.md) | Share a fixed number of expensive resources among many goroutines, and wait when all are in use. |
 | [Semaphore](../patterns/semaphore.md) | Limit how many operations use a resource at the same time. |
-| [Spill Queue](../patterns/spill-queue.md) | Absorb a backlog that briefly exceeds what memory should hold, without blocking the producer and without dropping items. |
+| [Spill Queue](../patterns/spill-queue.md) | Absorb a backlog that briefly exceeds what memory should hold, without making the producer wait for the consumer and without dropping items. |
 | [Token Bucket](../patterns/token-bucket.md) | Limit the average rate of an operation while allowing a bounded burst. |
 | [Worker Pool](../patterns/worker-pool.md) | Process any number of jobs with a fixed amount of concurrency. |
 

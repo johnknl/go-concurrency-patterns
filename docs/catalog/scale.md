@@ -48,7 +48,7 @@ Several cooperating goroutines or parts with distinct roles.
 | [Pipeline](../patterns/pipeline.md) | Process a stream in independent steps that run at the same time, each handing its output to the next. |
 | [Request Racing](../patterns/request-racing.md) | Get the fastest answer from several equivalent replicas and stop the others. |
 | [Resequencer](../patterns/resequencer.md) | Consume results in input order when concurrent work delivers them out of order. |
-| [Spill Queue](../patterns/spill-queue.md) | Absorb a backlog that briefly exceeds what memory should hold, without blocking the producer and without dropping items. |
+| [Spill Queue](../patterns/spill-queue.md) | Absorb a backlog that briefly exceeds what memory should hold, without making the producer wait for the consumer and without dropping items. |
 | [State Machine](../patterns/state-machine.md) | Change a stateful object only in steps that are legal for its current state, so that the same events in the same order always lead to the same state. |
 | [Token Bucket](../patterns/token-bucket.md) | Limit the average rate of an operation while allowing a bounded burst. |
 | [Watermark](../patterns/watermark.md) | Act on events in the order of their timestamps when they arrive from several inputs at different speeds, without guessing how long to wait for the slower ones. |

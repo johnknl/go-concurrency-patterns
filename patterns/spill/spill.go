@@ -41,8 +41,7 @@ const lenSize = 4 // bytes in the length prefix of a record
 type spillQueue struct {
 	file     *os.File  // the tail of the queue, behind mem
 	cond     sync.Cond // signaled when an item arrives or the queue closes
-	dir      string
-	mem      []string // the head of the queue, at most memCap items
+	mem      []string  // the head of the queue, at most memCap items
 	memCap   int
 	onDisk   int   // records in the file, all of them behind mem
 	readOff  int64 // offset of the oldest record still in the file
@@ -53,28 +52,22 @@ type spillQueue struct {
 	closed   bool
 }
 
-// openSpillQueue starts an empty queue with its spill file in dir.
+// openSpillQueue starts an empty queue with a new spill file in the existing directory dir. It creates one file
+// with a unique name and deletes nothing, and close removes only that file.
 func openSpillQueue(dir string, memCap int, maxDisk int64) (*spillQueue, error) {
-	if err := os.RemoveAll(dir); err != nil {
-		return nil, err
-	}
-
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return nil, err
-	}
-
 	f, err := os.CreateTemp(dir, "spill-*")
 	if err != nil {
 		return nil, err
 	}
 
-	q := &spillQueue{file: f, dir: dir, memCap: memCap, maxDisk: maxDisk}
+	q := &spillQueue{file: f, memCap: memCap, maxDisk: maxDisk}
 	q.cond.L = &q.mu
 
 	return q, nil
 }
 
-// push adds an item without blocking. It fails with errDiskFull when the disk tier is full too.
+// push adds an item without waiting for the consumer. It waits for the mutex and, once memory is full, for a write
+// to the file. It fails with errDiskFull when the disk tier is full too.
 func (q *spillQueue) push(item string) error {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -188,5 +181,5 @@ func (q *spillQueue) close() error {
 	q.mem = nil
 	q.cond.Broadcast()
 
-	return errors.Join(q.file.Close(), os.RemoveAll(q.dir))
+	return errors.Join(q.file.Close(), os.Remove(q.file.Name()))
 }

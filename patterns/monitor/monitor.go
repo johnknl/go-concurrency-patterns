@@ -23,6 +23,7 @@
 package monitor
 
 import (
+	"maps"
 	"sync"
 )
 
@@ -33,8 +34,9 @@ type bank struct {
 	mu       sync.Mutex
 }
 
+// newBank copies balances: a map the caller kept could be changed without the lock.
 func newBank(balances map[string]int) *bank {
-	return &bank{balances: balances}
+	return &bank{balances: maps.Clone(balances)}
 }
 
 // transfer moves amount from one account to another if the source has enough. Both changes happen under one lock,

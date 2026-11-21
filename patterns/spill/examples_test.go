@@ -25,7 +25,6 @@ package spill
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
 // Example_spill pushes five items into a queue that holds two in memory, then pops them all.
@@ -33,7 +32,7 @@ func Example_spill() {
 	tmp, _ := os.MkdirTemp("", "spill")
 	defer func() { _ = os.RemoveAll(tmp) }()
 
-	q, err := openSpillQueue(filepath.Join(tmp, "queue"), 2, 1<<20)
+	q, err := openSpillQueue(tmp, 2, 1<<20)
 	if err != nil {
 		fmt.Println(err)
 

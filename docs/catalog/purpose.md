@@ -18,7 +18,7 @@ How values move between goroutines.
 | [PubSub Hub](../patterns/pubsub-hub.md) | Deliver every published message to each current subscriber, while subscribers come and go. |
 | [Replay Buffer](../patterns/replay-buffer.md) | Let a late subscriber catch up on the last n messages before it receives live ones. |
 | [Resequencer](../patterns/resequencer.md) | Consume results in input order when concurrent work delivers them out of order. |
-| [Spill Queue](../patterns/spill-queue.md) | Absorb a backlog that briefly exceeds what memory should hold, without blocking the producer and without dropping items. |
+| [Spill Queue](../patterns/spill-queue.md) | Absorb a backlog that briefly exceeds what memory should hold, without making the producer wait for the consumer and without dropping items. |
 | [Tee](../patterns/tee.md) | Give each value of one stream to two consumers that process it independently. |
 | [Watermark](../patterns/watermark.md) | Act on events in the order of their timestamps when they arrive from several inputs at different speeds, without guessing how long to wait for the slower ones. |
 | [Windowing](../patterns/windowing.md) | Compute a count, sum, or other aggregate over each span of time of a stream, for fixed spans or for the most recent one. |

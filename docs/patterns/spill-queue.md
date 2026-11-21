@@ -1,7 +1,7 @@
 ---
 title: Spill Queue
 aliases: [Paging, Overflow to disk, Tiered buffer]
-intent: Absorb a backlog that briefly exceeds what memory should hold, without blocking the producer and without dropping items.
+intent: Absorb a backlog that briefly exceeds what memory should hold, without making the producer wait for the consumer and without dropping items.
 purpose: data-flow
 scale: pattern
 package: patterns/spill
@@ -16,7 +16,7 @@ original: true
 # Spill Queue
 
 <!-- meta -->
-Absorb a backlog that briefly exceeds what memory should hold, without blocking the producer and without dropping items.
+Absorb a backlog that briefly exceeds what memory should hold, without making the producer wait for the consumer and without dropping items.
 
 <div class="cp-props" markdown>
 
@@ -35,8 +35,8 @@ Absorb a backlog that briefly exceeds what memory should hold, without blocking 
 
 ## Problem
 
-A producer that must not wait, such as a network reader or a callback from a library, feeds a consumer that is
-sometimes slower. A [Bounded Queue](bounded-queue.md) with room for the worst burst holds too much memory; a smaller
+A producer that should not wait for its consumer, such as a network reader or a callback from a library, feeds a
+consumer that is sometimes slower. A [Bounded Queue](bounded-queue.md) with room for the worst burst holds too much memory; a smaller
 one forces a choice between blocking the producer and [dropping items](load-shedding.md). Disk is cheaper and larger
 than memory, but a queue that lives entirely on disk pays for I/O on every item, even when the consumer keeps up.
 
@@ -60,8 +60,7 @@ and only [backpressure](../concepts/backpressure.md#slowest-stage) or shedding h
 type spillQueue struct {
 	file     *os.File  // the tail of the queue, behind mem
 	cond     sync.Cond // signaled when an item arrives or the queue closes
-	dir      string
-	mem      []string // the head of the queue, at most memCap items
+	mem      []string  // the head of the queue, at most memCap items
 	memCap   int
 	onDisk   int   // records in the file, all of them behind mem
 	readOff  int64 // offset of the oldest record still in the file
@@ -73,20 +72,12 @@ type spillQueue struct {
 }
 
 func openSpillQueue(dir string, memCap int, maxDisk int64) (*spillQueue, error) {
-	if err := os.RemoveAll(dir); err != nil {
-		return nil, err
-	}
-
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return nil, err
-	}
-
 	f, err := os.CreateTemp(dir, "spill-*")
 	if err != nil {
 		return nil, err
 	}
 
-	q := &spillQueue{file: f, dir: dir, memCap: memCap, maxDisk: maxDisk}
+	q := &spillQueue{file: f, memCap: memCap, maxDisk: maxDisk}
 	q.cond.L = &q.mu
 
 	return q, nil
@@ -200,7 +191,7 @@ func (q *spillQueue) close() error {
 	q.mem = nil
 	q.cond.Broadcast()
 
-	return errors.Join(q.file.Close(), os.RemoveAll(q.dir))
+	return errors.Join(q.file.Close(), os.Remove(q.file.Name()))
 }
 ```
 <!-- /code -->
@@ -208,9 +199,13 @@ func (q *spillQueue) close() error {
 - **Order across tiers.** Memory always holds the oldest items and the file the newer ones, and the file is read in
   sequence, so the queue is one FIFO: [items from one producer leave in the order they
   entered](../concepts/ordering.md#sequential-fifo).
-- **The producer does not block** on the consumer; it waits only for the mutex and, when spilling, for a write to
-  the page cache.
-- **The queue starts empty** when it is opened.
+- **The producer does not wait for the consumer, but it is not free of waiting.** It waits for the mutex and, once
+  memory is full, for a write to the file, so the latency of a push includes disk latency, and a refill by `pop`
+  holds the mutex while it reads. That is admission to a bounded queue, not non-blocking execution; a producer that
+  must never wait on I/O needs the write on another goroutine, which is a different design.
+- **Opening a queue deletes nothing.** It creates one new file with a unique name in a directory that must exist,
+  and `close` removes only that file. A file left behind by a process that did not close its queue stays where it
+  is, and the new queue starts empty.
 
 A mutex and one `sync.Cond` are the simplest structure here: `push` and `pop` are short critical sections, `pop`
 waits on the condition for an item or for `close`, and the file and its offsets are only touched under the mutex. An owner goroutine with an input and an output channel would serve too, but it adds a
@@ -226,7 +221,7 @@ func main() {
 	tmp, _ := os.MkdirTemp("", "spill")
 	defer func() { _ = os.RemoveAll(tmp) }()
 
-	q, err := openSpillQueue(filepath.Join(tmp, "queue"), 2, 1<<20)
+	q, err := openSpillQueue(tmp, 2, 1<<20)
 	if err != nil {
 		fmt.Println(err)
 

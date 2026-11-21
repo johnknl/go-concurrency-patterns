@@ -45,7 +45,8 @@ The ward is a function that starts a goroutine and returns its heartbeat and res
 start it again. The steward starts the ward with a context of its own and selects on a result, a pulse, or the
 timeout; every pulse starts a new timeout. When the timeout fires, the steward cancels the ward, waits for its
 heartbeat channel to close, and only then starts a new ward, so two wards never run at once. When the ward ends on
-its own, or the steward's context is canceled, the steward closes `out` and returns.
+its own, the steward first forwards the results it left behind, then closes `out` and returns; when the steward's
+context is canceled, it closes `out` and returns at once.
 
 ```mermaid
 flowchart LR
@@ -59,7 +60,8 @@ Setting `results` to `nil` once it is closed is essential, or the loop would spi
 ready](../concepts/channel-ownership.md#closed-always-ready)). The steward's forward to `out` also selects on its
 context ([blocking points select on Done](../concepts/cooperative-cancellation.md#blocking-selects-done)), and the
 closed heartbeat tells it that the ward has ended ([close
-broadcasts](../concepts/channel-ownership.md#close-broadcasts)). The timeout is a function returning a channel; a
+broadcasts](../concepts/channel-ownership.md#close-broadcasts)); the timeout then no longer applies, and the
+results still buffered are forwarded until that channel closes too. The timeout is a function returning a channel; a
 program would use one that closes after a duration (for example via `time.AfterFunc`). In this example the timeout is
 controlled so the first ward is stuck until canceled and the second finishes.
 
@@ -86,14 +88,27 @@ func steward(ctx context.Context, timeout func() <-chan struct{}, start ward) <-
 					return
 				case _, ok := <-heartbeat:
 					if !ok {
-						cancel()
-						return
+						// The ward has ended. Results it left behind are still forwarded; with no pulses
+						// to wait for, the timeout no longer applies.
+						heartbeat, expired = nil, nil
+
+						if results == nil {
+							cancel()
+							return
+						}
+
+						continue
 					}
 
 					expired = timeout()
 				case n, ok := <-results:
 					if !ok {
 						results = nil
+
+						if heartbeat == nil {
+							cancel()
+							return
+						}
 
 						continue
 					}

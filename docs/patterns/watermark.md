@@ -49,16 +49,18 @@ machines belong to stream processing systems ([Akidau et al., 2015](../sources.m
 
 ## Mechanism
 
-An input that has sent time *t* sends nothing earlier. The least latest time over all open inputs is the watermark;
-buffered events at or below it are emitted in time order. One forwarder goroutine per input tags messages; `merge`
-owns all state in the caller's goroutine.
+An input that has sent time *t* sends nothing earlier, but it may send more events at *t*. The least latest time over
+all open inputs is the watermark; buffered events strictly before it are emitted in time order. An event at the
+watermark waits: a later event at the same time could still arrive, and events with equal times come out by input,
+so the output does not depend on arrival order. When every input has closed, everything waiting is emitted. One
+forwarder goroutine per input tags messages; `merge` owns all state in the caller's goroutine.
 
 ```mermaid
 flowchart LR
     A["input A (latest 4)"] --> F1[forwarder] --> M
     B["input B (latest 3)"] --> F2[forwarder] --> M
-    M["merge: watermark = min(4, 3) = 3"] --> W["waiting: 3, 4"]
-    W -->|"at ≤ 3"| E[emit]
+    M["merge: watermark = min(4, 3) = 3"] --> W["waiting: 1, 2, 3, 4"]
+    W -->|"at < 3"| E["emit 1, 2"]
 ```
 
 One possible arrival order in the example below; the output is the same for any order:
@@ -70,16 +72,16 @@ sequenceDiagram
     participant M as merge
     A->>M: a1 (wm: B unknown)
     B->>M: b2 (wm 1)
-    M-->>M: emit a1
     B->>M: b3 (wm 1)
     A->>M: a4 (wm 3)
-    M-->>M: emit b2, b3
+    M-->>M: emit a1, b2
     A->>M: a6 (wm 3)
     B->>M: b7 (wm 6)
-    M-->>M: emit a4, a6
+    M-->>M: emit b3, a4
     A->>M: close (wm 7)
-    M-->>M: emit b7
+    M-->>M: emit a6
     B->>M: close
+    M-->>M: emit b7
 ```
 
 <!-- code: patterns/watermark#message patterns/watermark#merge patterns/watermark#watermark patterns/watermark#forward patterns/watermark#before -->
@@ -130,7 +132,7 @@ func merge(ctx context.Context, inputs []<-chan message, limit int, emit func(me
 		}
 
 		wm, ok := watermark(latest, open)
-		for ok && len(waiting) > 0 && waiting[0].msg.at <= wm {
+		for ok && len(waiting) > 0 && (open == 0 || waiting[0].msg.at < wm) {
 			emit(waiting[0].msg)
 			waiting = waiting[1:]
 		}
@@ -250,7 +252,7 @@ func main() {
 	go func() {
 		defer close(a)
 
-		for _, at := range []int{1, 2, 3} {
+		for _, at := range []int{1, 2, 3, 4} {
 			a <- message{at: at, value: "a"}
 		}
 		<-seen
@@ -275,6 +277,7 @@ func main() {
 	// 1 a
 	// 2 a
 	// 3 a
+	// 4 a
 	// err: <nil>
 }
 ```

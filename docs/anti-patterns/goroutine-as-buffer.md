@@ -199,7 +199,7 @@ goroutine that does real work before its send is not this anti-pattern.
 <!-- remedies -->
 - [Bounded Queue](../patterns/bounded-queue.md): Let a producer run ahead of its consumer by a fixed, chosen amount.
 - [Load Shedding](../patterns/load-shedding.md): Keep the producer and the latency bounded under overload by dropping the work that does not fit.
-- [Spill Queue](../patterns/spill-queue.md): Absorb a backlog that briefly exceeds what memory should hold, without blocking the producer and without dropping items.
+- [Spill Queue](../patterns/spill-queue.md): Absorb a backlog that briefly exceeds what memory should hold, without making the producer wait for the consumer and without dropping items.
 <!-- /remedies -->
 
 If the caller can neither block nor drop, the backlog has to go somewhere bounded and cheaper than memory: a

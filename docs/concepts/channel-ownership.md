@@ -1,7 +1,7 @@
 ---
 title: Channel Ownership
 aliases: ['Who closes a channel']
-intent: Give every channel one owner that alone sends the last value and closes it, so a close is never raced or repeated.
+intent: Give every channel one owner, the single sender or the closer that coordinates several, so that a close comes after the last send and is never raced or repeated.
 concerns: [data-race-safety, leak-prevention]
 sources:
   - id: cox-buday
@@ -12,7 +12,7 @@ sources:
 # Channel Ownership
 
 <!-- meta -->
-Give every channel one owner that alone sends the last value and closes it, so a close is never raced or repeated.
+Give every channel one owner, the single sender or the closer that coordinates several, so that a close comes after the last send and is never raced or repeated.
 
 <div class="cp-props" markdown>
 
@@ -35,14 +35,16 @@ Channel ownership assigns that statement to exactly one party and makes the rest
 
 ### Only the owning sender closes { #sender-closes }
 
-The owner of a channel is the goroutine (or the single piece of code) that sends on it. It alone closes the channel,
-and it closes once, after its last send. Receivers never close: a receiver cannot know whether a sender is about to
+Closing belongs to the sending side. With one sender, the owner is the goroutine (or the single piece of code) that
+sends on the channel. It alone closes the channel, and it closes once, after its last send. With several senders,
+closing must be coordinated after all of them have finished (below). Receivers never close: a receiver cannot know whether a sender is about to
 send, and checking first does not help, since another goroutine can close between the check and the send.
 
 ### Several senders need a separate closer { #closer-waits }
 
-When several goroutines send on one channel, none of them owns it. A separate closer waits until every sender has
-returned, typically with a `sync.WaitGroup`, and then closes:
+When several goroutines send on one channel, no single sender can close it: it cannot know that the others have
+finished. A separate closer waits until every sender has returned, typically with a `sync.WaitGroup`, and then
+closes:
 
 ```go
 go func() {

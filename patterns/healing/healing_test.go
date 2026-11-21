@@ -23,8 +23,9 @@
 package healing
 
 // Mutants that survive on purpose:
-// - remove-cancel healing.go:50 and :69: ctx is done, so the ward's context, derived from it, is already canceled.
-// - remove-cancel healing.go:54: the ward closed its heartbeat, so it has ended; cancel only releases the context.
+// - remove-cancel healing.go:51 and :83: ctx is done, so the ward's context, derived from it, is already canceled.
+// - remove-cancel healing.go:60 and :73: the ward has closed both channels, so it has ended; cancel only releases
+//   the context.
 
 import (
 	"context"
@@ -243,6 +244,37 @@ func TestSteward(t *testing.T) {
 				t.Fatal("out not closed")
 			}
 		})
+	})
+
+	t.Run("buffered results of an ended ward are forwarded before the steward ends", func(t *testing.T) {
+		// Both channels are ready when the ward has ended: a closed heartbeat and buffered results. Every pass
+		// of the select may pick either, so repeat until a lost result would have shown.
+		for range 100 {
+			synctest.Test(t, func(t *testing.T) {
+				start := func(context.Context) (<-chan struct{}, <-chan int) {
+					heartbeat := make(chan struct{})
+					results := make(chan int, 3)
+					results <- 1
+					results <- 2
+					results <- 3
+					close(heartbeat)
+					close(results)
+
+					return heartbeat, results
+				}
+
+				timeout := func() <-chan struct{} { return nil }
+
+				var got []int
+				for n := range steward(t.Context(), timeout, start) {
+					got = append(got, n)
+				}
+
+				if !slices.Equal(got, []int{1, 2, 3}) {
+					t.Fatalf("forwarded %v, want [1 2 3]", got)
+				}
+			})
+		}
 	})
 
 	t.Run("does not take the next result before the previous one was forwarded", func(t *testing.T) {

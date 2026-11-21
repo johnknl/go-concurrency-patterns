@@ -29,7 +29,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 	"sync"
 	"testing"
@@ -38,7 +37,7 @@ import (
 func newQueue(t *testing.T, memCap int, maxDisk int64) *spillQueue {
 	t.Helper()
 
-	q, err := openSpillQueue(filepath.Join(t.TempDir(), "queue"), memCap, maxDisk)
+	q, err := openSpillQueue(t.TempDir(), memCap, maxDisk)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +188,7 @@ func TestDiskFull(t *testing.T) {
 }
 
 func TestStartsEmpty(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "queue")
+	dir := t.TempDir()
 
 	q, err := openSpillQueue(dir, 1, 1<<20)
 	if err != nil {
@@ -202,7 +201,8 @@ func TestStartsEmpty(t *testing.T) {
 		}
 	}
 
-	// A crash: the process loses the queue without closing it.
+	// A crash: the process loses the queue without closing it, and its file stays behind.
+	stale := q.file.Name()
 	if err = q.file.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -220,15 +220,21 @@ func TestStartsEmpty(t *testing.T) {
 	if got := mustPop(t, q); got != "x" {
 		t.Fatalf("got %q, want the queue to start empty", got)
 	}
+
+	if _, err := os.Stat(stale); err != nil {
+		t.Fatalf("opening a queue deleted an existing file: %v", err)
+	}
 }
 
 func TestClose(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "queue")
+	dir := t.TempDir()
 
 	q, err := openSpillQueue(dir, 1, 1<<20)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	name := q.file.Name()
 
 	waiting := make(chan bool)
 
@@ -245,8 +251,12 @@ func TestClose(t *testing.T) {
 		t.Fatal("pop on a closed queue returned an item")
 	}
 
-	if _, err := os.Stat(dir); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("directory still there: %v", err)
+	if _, err := os.Stat(name); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("spill file still there: %v", err)
+	}
+
+	if _, err := os.Stat(dir); err != nil {
+		t.Fatalf("close removed more than its own file: %v", err)
 	}
 
 	if err := q.push("a"); !errors.Is(err, errClosed) {

@@ -27,7 +27,8 @@ import (
 )
 
 // ward is a restartable unit of work. It sends pulses on the first channel and results on the second, and
-// closes both when it ends.
+// closes both when it ends. Results it has sent but nobody has received yet are not lost when it ends: the steward
+// forwards them before it ends.
 type ward func(ctx context.Context) (<-chan struct{}, <-chan int)
 
 // steward starts a ward and restarts it when no pulse arrives before the channel from timeout fires. The
@@ -51,14 +52,27 @@ func steward(ctx context.Context, timeout func() <-chan struct{}, start ward) <-
 					return
 				case _, ok := <-heartbeat:
 					if !ok {
-						cancel()
-						return
+						// The ward has ended. Results it left behind are still forwarded; with no pulses
+						// to wait for, the timeout no longer applies.
+						heartbeat, expired = nil, nil
+
+						if results == nil {
+							cancel()
+							return
+						}
+
+						continue
 					}
 
 					expired = timeout()
 				case n, ok := <-results:
 					if !ok {
 						results = nil
+
+						if heartbeat == nil {
+							cancel()
+							return
+						}
 
 						continue
 					}

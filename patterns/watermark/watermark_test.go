@@ -114,6 +114,30 @@ func TestMerge(t *testing.T) {
 		})
 	})
 
+	t.Run("equal times come out by input whatever the arrival order", func(t *testing.T) {
+		for _, order := range [][]int{{0, 0, 1}, {0, 1, 0}, {1, 0, 0}, {1, 0, 1, 0}} {
+			synctest.Test(t, func(t *testing.T) {
+				h := start(t.Context(), 2, 10)
+
+				got := make([]string, 0, len(order)+2)
+				for _, i := range order {
+					h.event(i, 5)
+					got = append(got, h.emitted()...)
+				}
+
+				close(h.inputs[0])
+				close(h.inputs[1])
+				got = append(got, h.emitted()...)
+
+				if !slices.IsSorted(got) {
+					t.Errorf("arrival order %v: got %v, want equal times ordered by input", order, got)
+				}
+
+				<-h.err
+			})
+		}
+	})
+
 	t.Run("keeps the order of equal times within an input", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			h := start(t.Context(), 2, 10)
@@ -138,14 +162,14 @@ func TestMerge(t *testing.T) {
 			check(t, h.emitted())
 
 			h.event(1, 5)
-			check(t, h.emitted(), "1a", "2a")
+			check(t, h.emitted(), "1a") // the watermark is 2: 2a could still tie with a later event of input 0
 
 			h.event(0, 5)
-			check(t, h.emitted(), "5a", "5b")
+			check(t, h.emitted(), "2a") // the watermark is 5: 5a and 5b could still tie
 
 			close(h.inputs[0])
 			close(h.inputs[1])
-			check(t, h.emitted())
+			check(t, h.emitted(), "5a", "5b")
 			<-h.err
 		})
 	})
@@ -156,10 +180,11 @@ func TestMerge(t *testing.T) {
 
 			h.event(0, 1)
 			h.event(0, 4)
+			h.event(0, 8)
 			h.punct(1, 3)
 			check(t, h.emitted(), "1a")
 
-			h.punct(1, 4)
+			h.punct(1, 5)
 			check(t, h.emitted(), "4a")
 
 			close(h.inputs[0])
@@ -178,12 +203,14 @@ func TestMerge(t *testing.T) {
 			check(t, h.emitted())
 
 			close(h.inputs[2])
-			check(t, h.emitted(), "1a", "2b")
+			check(t, h.emitted(), "1a")
 
 			close(h.inputs[1])
-			check(t, h.emitted(), "7a")
+			check(t, h.emitted(), "2b")
 
 			close(h.inputs[0])
+			check(t, h.emitted(), "7a")
+
 			if err := <-h.err; err != nil {
 				t.Fatal(err)
 			}
@@ -213,13 +240,16 @@ func TestMerge(t *testing.T) {
 
 	t.Run("events emitted at once do not count against the limit", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
-			h := start(t.Context(), 1, 0)
+			h := start(t.Context(), 1, 1)
 
 			h.event(0, 1)
 			h.event(0, 2)
+			h.event(0, 3)
 			check(t, h.emitted(), "1a", "2a")
 
 			close(h.inputs[0])
+			check(t, h.emitted(), "3a")
+
 			if err := <-h.err; err != nil {
 				t.Fatal(err)
 			}
