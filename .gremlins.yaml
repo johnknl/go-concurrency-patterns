@@ -1,0 +1,32 @@
+unleash:
+  integration: false
+  output: .tmp/mutation/gremlins.json
+  workers: 0
+  timeout-coefficient: 10
+  threshold:
+    efficacy: 0
+    mutant-coverage: 0
+
+mutants:
+  arithmetic-base:
+    enabled: true
+  conditionals-boundary:
+    enabled: true
+  conditionals-negation:
+    enabled: true
+  increment-decrement:
+    enabled: true
+  invert-negatives:
+    enabled: true
+  invert-logical:
+    enabled: true
+  invert-loopctrl:
+    enabled: true
+  invert-assignments:
+    enabled: true
+  invert-bitwise:
+    enabled: true
+  invert-bwassign:
+    enabled: true
+  remove-self-assignments:
+    enabled: true

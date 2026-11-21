@@ -1,0 +1,502 @@
+# The vocabulary of the classification. Pattern pages (docs/patterns/*.md) pick values from here in their
+# front matter, and `docsync` validates them and renders the catalogs.
+
+# The principles that the anti-patterns violate. The home page states them; the anchors there are
+# principle-<key>.
+principle:
+  title: Principle
+  question: Which principle does the anti-pattern violate?
+  values:
+    ownership:
+      title: Clear ownership
+      description: Every goroutine, channel and mutable value has one owner that decides its lifetime and alone closes or mutates it.
+    synchronous-first:
+      title: Synchronous first
+      description: A function does its work in the caller's goroutine and returns; concurrency is the caller's choice and needs a reason.
+    simplest-mechanism:
+      title: The simplest mechanism that works
+      description: Use the lowest rung that solves the problem; climb only when the one below cannot.
+    explicit-synchronization:
+      title: Synchronize explicitly
+      description: Ordering and exclusion come from channels, locks, atomics or wait groups, never from timing; locks are short and ordered.
+    bounded:
+      title: Bound everything
+      description: Goroutines, queues, retries and memory have limits, and the code decides what happens at the limit.
+    plain-code:
+      title: Plain code over generality
+      description: An abstraction or dependency earns its place; misuse is handled by documented contracts.
+    explicit-inputs:
+      title: Prefer explicit inputs
+      description: Prefer behavior that follows from explicit inputs (state, events, and injected clocks and random sources), where the same inputs must give the same result.
+
+purpose:
+  title: Purpose
+  question: What is the pattern for?
+  values:
+    data-flow:
+      title: Data flow
+      description: How values move between goroutines.
+    execution:
+      title: Execution
+      description: Who runs the work, and how the outcome comes back.
+    coordination:
+      title: Coordination
+      description: How goroutines wait for, limit, or choose among each other, and how shared state is kept safe.
+    lifecycle:
+      title: Lifecycle
+      description: How goroutines are stopped, and kept from leaking.
+    resilience:
+      title: Resilience
+      description: How errors, slowness, and failure are handled to keep a system working.
+
+scale:
+  title: Scale
+  question: How big is the pattern?
+  values:
+    idiom:
+      title: Idiom
+      description: One or two mechanisms arranged in a few lines, often a single function.
+    pattern:
+      title: Pattern
+      description: Several cooperating goroutines or parts with distinct roles.
+    composite:
+      title: Composite
+      description: A component built by combining other patterns of this catalog.
+
+mechanism:
+  title: Mechanism
+  question: Which Go building blocks does it use?
+  values:
+    channels:
+      title: Channels
+      description: Sending and receiving on channels, and closing them.
+    select:
+      title: Select
+      description: Waiting on several channel operations at once.
+    sync:
+      title: Sync
+      description: Mutexes, condition variables, wait groups, once, and pools from `sync`.
+    atomic:
+      title: Atomic
+      description: Lock-free operations on single values from `sync/atomic`.
+    context:
+      title: Context
+      description: Cancellation, deadlines, and request-scoped values from `context`.
+    time:
+      title: Time
+      description: Timers, tickers, and durations from `time`.
+
+concern:
+  title: Concern
+  question: Which problem does it address?
+  values:
+    determinism:
+      title: Determinism
+      description: Getting the same result from the same inputs, for replay, tests, and reproducing failures.
+    backpressure:
+      title: Backpressure
+      description: Making a fast producer wait for a slow consumer.
+    bounded-concurrency:
+      title: Bounded concurrency
+      description: Capping how many things run, or how many resources are used, at once.
+      guide: >-
+        When callers need only permission to proceed, a [Semaphore](../patterns/semaphore.md) bounds how many run at
+        once. When a fixed number of distinct, expensive resources such as connections must be shared, a
+        [Resource Pool](../patterns/resource-pool.md) hands them out and makes callers wait when all are in use. When
+        the work itself should run on a fixed set of long-lived goroutines fed from a queue, use a
+        [Worker Pool](../patterns/worker-pool.md). An [Object Cache](../patterns/object-cache.md) reuses temporary
+        objects but bounds nothing.
+    cancellation:
+      title: Cancellation
+      description: Stopping work that is no longer needed.
+      guide: >-
+        A [Deadline](../stdlib/deadline.md) bounds how long the caller waits for an operation, and it only signals
+        the operation. [Cooperative cancellation](../concepts/cooperative-cancellation.md) is what makes a long operation notice the
+        signal: it checks the context between units, stops within one unit, and leaves state consistent.
+        [Context Propagation](../stdlib/context-propagation.md) carries the deadline and the cancellation from the
+        top of a request down the call tree, so every step shares one bound.
+        [Cancel on Error](../patterns/cancel-on-error.md) handles a group of concurrent tasks that build
+        one result: the first failure cancels the rest.
+    leak-prevention:
+      title: Leak prevention
+      description: Making sure that every goroutine can end.
+    data-race-safety:
+      title: Data race safety
+      description: Sharing or handing over data without races.
+    error-handling:
+      title: Error handling
+      description: Carrying, deciding on, and reporting errors from concurrent work.
+    latency:
+      title: Latency
+      description: Answering sooner, or giving up on a slow answer.
+    throughput:
+      title: Throughput
+      description: Doing more work in the same time.
+    rate-control:
+      title: Rate control
+      description: Limiting how often something happens over time.
+      guide: >-
+        To limit how often an operation starts, choose by what may happen in a short span and whether callers wait or
+        are refused. A [Token Bucket](../patterns/token-bucket.md) enforces an average rate and lets a bounded burst
+        through after idle time; callers can be refused or wait, and `golang.org/x/time/rate` is the production
+        implementation. [Pacing](../patterns/pacing.md) spaces calls one interval apart with no burst; every caller
+        waits its turn. To limit how many
+        operations run at once instead of how often they start, use a [Semaphore](../patterns/semaphore.md).
+    liveness:
+      title: Liveness
+      description: Knowing that a goroutine is alive, and restoring it when it is not.
+    ordering:
+      title: Ordering
+      description: Restoring or deciding the order of values that arrive out of order.
+    batching:
+      title: Batching
+      description: Combining many small operations into fewer large ones.
+    overload:
+      title: Overload
+      description: Staying correct and responsive when work arrives faster than it can be handled.
+    composition:
+      title: Composition
+      description: Combining small concurrent parts into larger ones.
+
+# Bibliography. Authors are "Surname, Given names", or a plain name for an organization. The reference is
+# rendered in APA style, by type: book, article, web (a page on a site), talk, report.
+sources:
+  cox-buday:
+    type: book
+    authors: ["Cox-Buday, Katherine"]
+    year: 2017
+    title: "Concurrency in Go: Tools and techniques for developers"
+    publisher: O'Reilly Media
+    url: https://www.oreilly.com/library/view/concurrency-in-go/9781491941294/
+  pike-2012:
+    type: talk
+    authors: ["Pike, Rob"]
+    year: 2012
+    title: Go concurrency patterns
+    container: Google I/O
+    url: https://go.dev/talks/2012/concurrency.slide
+  blog-pipelines:
+    type: web
+    authors: ["Ajmani, Sameer"]
+    year: 2014
+    title: "Go concurrency patterns: Pipelines and cancellation"
+    container: The Go Blog
+    url: https://go.dev/blog/pipelines
+  blog-context:
+    type: web
+    authors: ["Ajmani, Sameer"]
+    year: 2014
+    title: "Go concurrency patterns: Context"
+    container: The Go Blog
+    url: https://go.dev/blog/context
+  blog-timeouts:
+    type: web
+    authors: ["Gerrand, Andrew"]
+    year: 2010
+    title: "Go concurrency patterns: Timing out, moving on"
+    container: The Go Blog
+    url: https://go.dev/blog/concurrency-timeouts
+  blog-share-memory:
+    type: web
+    authors: ["Gerrand, Andrew"]
+    year: 2010
+    title: Share memory by communicating
+    container: The Go Blog
+    url: https://go.dev/blog/codelab-share
+  gobyexample-pools:
+    type: web
+    authors: ["McGranaghan, Mark", "Bendersky, Eli"]
+    year: n.d.
+    title: Worker pools
+    container: Go by Example
+    url: https://gobyexample.com/worker-pools
+  effective-go:
+    type: web
+    authors: ["The Go Authors"]
+    year: n.d.
+    title: Effective Go
+    container: go.dev
+    url: https://go.dev/doc/effective_go
+  dijkstra-1965:
+    type: report
+    authors: ["Dijkstra, Edsger W."]
+    year: 1965
+    title: Cooperating sequential processes
+    detail: EWD 123
+    publisher: Technological University Eindhoven
+    url: https://www.cs.utexas.edu/~EWD/transcriptions/EWD01xx/EWD123.html
+  baker-hewitt-1977:
+    type: article
+    authors: ["Baker, Henry C.", "Hewitt, Carl"]
+    year: 1977
+    title: The incremental garbage collection of processes
+    container: ACM SIGPLAN Notices
+    detail: 12(8), 55–59
+    url: https://doi.org/10.1145/872734.806932
+  buschmann-1996:
+    type: book
+    authors: ["Buschmann, Frank", "Meunier, Regine", "Rohnert, Hans", "Sommerlad, Peter", "Stal, Michael"]
+    year: 1996
+    title: "Pattern-oriented software architecture, volume 1: A system of patterns"
+    publisher: John Wiley & Sons
+  schmidt-2000:
+    type: book
+    authors: ["Schmidt, Douglas C.", "Stal, Michael", "Rohnert, Hans", "Buschmann, Frank"]
+    year: 2000
+    title: "Pattern-oriented software architecture, volume 2: Patterns for concurrent and networked objects"
+    publisher: John Wiley & Sons
+  hewitt-1973:
+    type: article
+    authors: ["Hewitt, Carl", "Bishop, Peter", "Steiger, Richard"]
+    year: 1973
+    title: A universal modular ACTOR formalism for artificial intelligence
+    container: Proceedings of the 3rd International Joint Conference on Artificial Intelligence
+    detail: 235–245
+    url: https://www.ijcai.org/Proceedings/73/Papers/027B.pdf
+  nygard-2018:
+    type: book
+    authors: ["Nygard, Michael T."]
+    year: 2018
+    title: "Release it! Design and deploy production-ready software (2nd ed.)"
+    publisher: Pragmatic Bookshelf
+    url: https://pragprog.com/titles/mnee2/release-it-second-edition/
+  sre-overload:
+    type: web
+    authors: ["Cuervo, Alejandro Forero"]
+    year: 2016
+    title: Handling overload
+    container: "Site reliability engineering: How Google runs production systems"
+    url: https://sre.google/sre-book/handling-overload/
+  reactive-streams:
+    type: web
+    authors: ["Reactive Streams"]
+    year: n.d.
+    title: Reactive streams
+    container: reactive-streams.org
+    url: https://www.reactive-streams.org/
+  go-http-shutdown:
+    type: web
+    authors: ["The Go Authors"]
+    year: n.d.
+    title: "net/http: Server.Shutdown"
+    container: pkg.go.dev
+    url: https://pkg.go.dev/net/http#Server.Shutdown
+  go-bufio-scanner:
+    type: web
+    authors: ["The Go Authors"]
+    year: n.d.
+    title: "bufio: Scanner.Err"
+    container: pkg.go.dev
+    url: https://pkg.go.dev/bufio#Scanner.Err
+  tu-2019:
+    type: article
+    authors: ["Tu, Tengfei", "Liu, Xiaoyu", "Song, Linhai", "Zhang, Yiying"]
+    year: 2019
+    title: Understanding real-world concurrency bugs in Go
+    container: Proceedings of the 24th International Conference on Architectural Support for Programming Languages and Operating Systems
+    detail: 865–878
+    url: https://doi.org/10.1145/3297858.3304069
+  harsanyi-2022:
+    type: book
+    authors: ["Harsanyi, Teiva"]
+    year: 2022
+    title: 100 Go mistakes and how to avoid them
+    publisher: Manning
+    url: https://www.manning.com/books/100-go-mistakes-and-how-to-avoid-them
+  gorilla-chat:
+    type: web
+    authors: ["The Gorilla WebSocket Authors"]
+    year: 2013
+    title: Chat example
+    container: gorilla/websocket
+    url: https://github.com/gorilla/websocket/tree/main/examples/chat
+  go-memory-model:
+    type: web
+    authors: ["The Go Authors"]
+    year: 2022
+    title: The Go memory model
+    container: go.dev
+    url: https://go.dev/ref/mem
+  go-sync:
+    type: web
+    authors: ["The Go Authors"]
+    year: n.d.
+    title: "Package sync"
+    container: pkg.go.dev
+    url: https://pkg.go.dev/sync
+  go-sync-atomic:
+    type: web
+    authors: ["The Go Authors"]
+    year: n.d.
+    title: "Package sync/atomic"
+    container: pkg.go.dev
+    url: https://pkg.go.dev/sync/atomic
+  go-vet-copylock:
+    type: web
+    authors: ["The Go Authors"]
+    year: n.d.
+    title: "Package copylock"
+    container: pkg.go.dev
+    url: https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/copylock
+  hoare-1974:
+    type: article
+    authors: ["Hoare, C. A. R."]
+    year: 1974
+    title: "Monitors: An operating system structuring concept"
+    container: Communications of the ACM
+    detail: 17(10), 549–557
+    url: https://doi.org/10.1145/355620.361161
+  lampson-redell-1980:
+    type: article
+    authors: ["Lampson, Butler W.", "Redell, David D."]
+    year: 1980
+    title: Experience with processes and monitors in Mesa
+    container: Communications of the ACM
+    detail: 23(2), 105–117
+    url: https://doi.org/10.1145/358818.358824
+  herlihy-shavit-2012:
+    type: book
+    authors: ["Herlihy, Maurice", "Shavit, Nir"]
+    year: 2012
+    title: The art of multiprocessor programming (Rev. 1st ed.)
+    publisher: Morgan Kaufmann
+  meyers-alexandrescu-2004:
+    type: article
+    authors: ["Meyers, Scott", "Alexandrescu, Andrei"]
+    year: 2004
+    title: C++ and the perils of double-checked locking
+    container: Dr. Dobb's Journal
+    url: https://www.aristeia.com/Papers/DDJ_Jul_Aug_2004_revised.pdf
+  coffman-1971:
+    type: article
+    authors: ["Coffman, E. G.", "Elphick, M. J.", "Shoshani, A."]
+    year: 1971
+    title: System deadlocks
+    container: ACM Computing Surveys
+    detail: 3(2), 67–78
+    url: https://doi.org/10.1145/356586.356588
+  dean-barroso-2013:
+    type: article
+    authors: ["Dean, Jeffrey", "Barroso, Luiz André"]
+    year: 2013
+    title: The tail at scale
+    container: Communications of the ACM
+    detail: 56(2), 74–80
+    url: https://doi.org/10.1145/2408776.2408794
+  reactivex-subject:
+    type: web
+    authors: ["ReactiveX"]
+    year: n.d.
+    title: Subject
+    container: ReactiveX documentation
+    url: https://reactivex.io/documentation/subject.html
+  go-code-review-comments:
+    type: web
+    authors: ["The Go Authors"]
+    year: n.d.
+    title: Go code review comments
+    container: Go wiki
+    url: https://go.dev/wiki/CodeReviewComments
+  pike-2015:
+    type: talk
+    authors: ["Pike, Rob"]
+    year: 2015
+    title: Go proverbs
+    container: Gopherfest SV
+    url: https://go-proverbs.github.io/
+  metz-2016:
+    type: web
+    authors: ["Metz, Sandi"]
+    year: 2016
+    title: The wrong abstraction
+    container: sandimetz.com
+    url: https://sandimetz.com/blog/2016/1/20/the-wrong-abstraction
+  go-wiki-mutex-or-channel:
+    type: web
+    authors: ["The Go Authors"]
+    year: n.d.
+    title: Use a sync.Mutex or a channel?
+    container: Go wiki
+    url: https://go.dev/wiki/MutexOrChannel
+  dewitt-1984:
+    type: article
+    authors: ["DeWitt, David J.", "Katz, Randy H.", "Olken, Frank", "Shapiro, Leonard D.", "Stonebraker, Michael R.", "Wood, David A."]
+    year: 1984
+    title: Implementation techniques for main memory database systems
+    container: Proceedings of the 1984 ACM SIGMOD International Conference on Management of Data
+    detail: 1–8
+    url: https://doi.org/10.1145/602259.602261
+  akidau-2013:
+    type: article
+    authors: ["Akidau, Tyler", "Balikov, Alex", "Bekiroğlu, Kaya", "Chernyak, Slava", "Haberman, Josh", "Lax, Reuven", "McVeety, Sam", "Mills, Daniel", "Nordstrom, Paul", "Whittle, Sam"]
+    year: 2013
+    title: "MillWheel: Fault-tolerant stream processing at internet scale"
+    container: Proceedings of the VLDB Endowment
+    detail: 6(11), 1033–1044
+    url: https://doi.org/10.14778/2536222.2536229
+  akidau-2015:
+    type: article
+    authors: ["Akidau, Tyler", "Bradshaw, Robert", "Chambers, Craig", "Chernyak, Slava", "Fernández-Moctezuma, Rafael J.", "Lax, Reuven", "McVeety, Sam", "Mills, Daniel", "Perry, Frances", "Schmidt, Eric", "Whittle, Sam"]
+    year: 2015
+    title: "The dataflow model: A practical approach to balancing correctness, latency, and cost in massive-scale, unbounded, out-of-order data processing"
+    container: Proceedings of the VLDB Endowment
+    detail: 8(12), 1792–1803
+    url: https://doi.org/10.14778/2824032.2824076
+  akidau-2018:
+    type: book
+    authors: ["Akidau, Tyler", "Chernyak, Slava", "Lax, Reuven"]
+    year: 2018
+    title: "Streaming systems: The what, where, when, and how of large-scale data processing"
+    publisher: O'Reilly Media
+  tucker-2003:
+    type: article
+    authors: ["Tucker, Peter A.", "Maier, David", "Sheard, Tim", "Fegaras, Leonidas"]
+    year: 2003
+    title: Exploiting punctuation semantics in continuous data streams
+    container: IEEE Transactions on Knowledge and Data Engineering
+    detail: 15(3), 555–568
+    url: https://doi.org/10.1109/TKDE.2003.1198390
+  hohpe-woolf-2003:
+    type: book
+    authors: ["Hohpe, Gregor", "Woolf, Bobby"]
+    year: 2003
+    title: "Enterprise integration patterns: Designing, building, and deploying messaging solutions"
+    publisher: Addison-Wesley
+    url: https://www.enterpriseintegrationpatterns.com/patterns/messaging/Resequencer.html
+  hendler-2010:
+    type: article
+    authors: ["Hendler, Danny", "Incze, Itai", "Shavit, Nir", "Tzafrir, Moran"]
+    year: 2010
+    title: Flat combining and the synchronization-parallelism tradeoff
+    container: Proceedings of the 22nd Annual ACM Symposium on Parallelism in Algorithms and Architectures
+    detail: 355–364
+    url: https://doi.org/10.1145/1810479.1810540
+  golang-x-time-rate:
+    type: web
+    authors: ["The Go Authors"]
+    year: n.d.
+    title: "Package rate"
+    container: pkg.go.dev
+    url: https://pkg.go.dev/golang.org/x/time/rate
+  go-time:
+    type: web
+    authors: ["The Go Authors"]
+    year: n.d.
+    title: "Package time"
+    container: pkg.go.dev
+    url: https://pkg.go.dev/time
+  go-testing-synctest:
+    type: web
+    authors: ["The Go Authors"]
+    year: n.d.
+    title: "Package testing/synctest"
+    container: pkg.go.dev
+    url: https://pkg.go.dev/testing/synctest
+  schneider-1990:
+    type: article
+    authors: ["Schneider, Fred B."]
+    year: 1990
+    title: "Implementing fault-tolerant services using the state machine approach: A tutorial"
+    container: ACM Computing Surveys
+    detail: 22(4), 299–319
+    url: https://doi.org/10.1145/98163.98167

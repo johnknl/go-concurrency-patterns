@@ -1,0 +1,156 @@
+site_name: Go Concurrency Patterns
+site_description: An educational catalog of concurrency patterns in Go
+site_url: https://johnknl.github.io/go-concurrency-patterns/
+repo_url: https://github.com/johnknl/go-concurrency-patterns
+repo_name: johnknl/go-concurrency-patterns
+edit_uri: edit/main/docs/
+docs_dir: docs
+
+theme:
+  name: material
+  custom_dir: overrides
+  features:
+    - navigation.footer
+    - navigation.indexes
+    - navigation.path
+    - navigation.top
+    - content.code.copy
+    - content.action.edit
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+extra_css:
+  - stylesheets/go.css
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Home: index.md
+  - Catalog:
+    - Overview: catalog/index.md
+    - By purpose: catalog/purpose.md
+    - By scale: catalog/scale.md
+    - By mechanism: catalog/mechanism.md
+    - By concern: catalog/concern.md
+    - Superseded: catalog/superseded.md
+  - Patterns:
+    - Data flow:
+        - Pipeline: patterns/pipeline.md
+        - Fan-Out/Fan-In: patterns/fan-out-fan-in.md
+        - Or-Done: patterns/or-done.md
+        - Tee: patterns/tee.md
+        - Bounded Queue: patterns/bounded-queue.md
+        - Spill Queue: patterns/spill-queue.md
+        - Batcher: patterns/batcher.md
+        - Windowing: patterns/windowing.md
+        - Resequencer: patterns/resequencer.md
+        - Watermark: patterns/watermark.md
+        - Replay Buffer: patterns/replay-buffer.md
+        - PubSub Hub: patterns/pubsub-hub.md
+    - Execution:
+        - Worker Pool: patterns/worker-pool.md
+        - Future: patterns/future.md
+        - Group Commit: patterns/group-commit.md
+        - Active Object: patterns/active-object.md
+        - State Machine: patterns/state-machine.md
+    - Coordination:
+        - Semaphore: patterns/semaphore.md
+        - For-Select Loop: patterns/for-select-loop.md
+        - Token Bucket: patterns/token-bucket.md
+        - Pacing: patterns/pacing.md
+        - Object Cache: patterns/object-cache.md
+        - Resource Pool: patterns/resource-pool.md
+        - Snapshot via Owner: patterns/snapshot-via-owner.md
+        - Online Attach: patterns/online-attach.md
+        - Monitor: patterns/monitor.md
+        - Compare-and-Swap Loop: patterns/compare-and-swap-loop.md
+        - Copy-on-Write Snapshot: patterns/copy-on-write-snapshot.md
+    - Lifecycle:
+        - Close with Cause: patterns/close-with-cause.md
+    - Resilience:
+        - Result with Error: patterns/result-with-error.md
+        - Cancel on Error: patterns/cancel-on-error.md
+        - Heartbeat: patterns/heartbeat.md
+        - Healing Goroutines: patterns/healing-goroutines.md
+        - Request Racing: patterns/request-racing.md
+        - Load Shedding: patterns/load-shedding.md
+        - Timed Send: patterns/timed-send.md
+        - Slow Consumer Eviction: patterns/slow-consumer-eviction.md
+    - Anti-patterns:
+        - anti-patterns/index.md
+        - Fire-and-Forget Goroutine: anti-patterns/fire-and-forget-goroutine.md
+        - Needless Asynchrony: anti-patterns/needless-asynchrony.md
+        - Channel Generator: anti-patterns/channel-generator.md
+        - Channel Where a Mutex Would Do: anti-patterns/channel-instead-of-mutex.md
+        - Premature Parallelism: anti-patterns/premature-parallelism.md
+        - Premature Abstraction: anti-patterns/premature-abstraction.md
+        - Unbounded Goroutines: anti-patterns/unbounded-goroutines.md
+        - Sleeping to Synchronize: anti-patterns/sleep-synchronization.md
+        - Buffer as a Band-Aid: anti-patterns/oversized-buffer.md
+        - Goroutine as a Buffer: anti-patterns/goroutine-as-buffer.md
+        - Batch Without a Time Bound: anti-patterns/batch-without-time-bound.md
+        - Unbounded Reorder Buffer: anti-patterns/unbounded-reorder-buffer.md
+        - Lock Held While Blocking: anti-patterns/lock-held-while-blocking.md
+        - Closing from the Wrong Side: anti-patterns/wrong-side-close.md
+        - Pointer over a Channel: anti-patterns/pointer-over-channel.md
+        - Ignored Context: anti-patterns/ignored-context.md
+        - Copied Mutex: anti-patterns/copied-mutex.md
+        - Double-Checked Locking: anti-patterns/double-checked-locking.md
+        - Inconsistent Lock Order: anti-patterns/inconsistent-lock-order.md
+        - Implicit State Machine: anti-patterns/implicit-state-machine.md
+        - Non-Deterministic State Machine: anti-patterns/non-deterministic-state-machine.md
+  - Concepts:
+    - concepts/index.md
+    - Channel Ownership: concepts/channel-ownership.md
+    - Cooperative Cancellation: concepts/cooperative-cancellation.md
+    - Goroutine Leak Prevention: concepts/goroutine-leak-prevention.md
+    - Memory Visibility: concepts/memory-visibility.md
+    - Backpressure: concepts/backpressure.md
+    - Overload Policy: concepts/overload-policy.md
+    - Confinement: concepts/confinement.md
+    - Timers and Tickers: concepts/timers.md
+    - Determinism: concepts/determinism.md
+    - Ordering: concepts/ordering.md
+  - Standard library:
+    - stdlib/index.md
+    - Lazy Initialization: stdlib/lazy-initialization.md
+    - Context Propagation: stdlib/context-propagation.md
+    - Deadline: stdlib/deadline.md
+    - Condition Variable: stdlib/condition-variable.md
+    - Synctest: stdlib/synctest.md
+  - About:
+    - Bibliography: sources.md
+    - Contributing: contributing.md

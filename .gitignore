@@ -1,0 +1,6 @@
+bin
+site
+.venv
+.tmp
+*.test
+*.prof

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{#- Numbered browsing: patterns, anti-patterns, concepts and standard library each form a sequence in nav order. -#}
+{% block content %}
+  {%- set ns = namespace(seq=[], kind="") -%}
+  {%- set kinds = {"patterns": "Pattern", "anti-patterns": "Anti-pattern", "concepts": "Concept", "stdlib": "Standard library"} -%}
+  {%- set section = page.url.split("/")[0] -%}
+  {%- if section in kinds and page.url != section ~ "/" -%}
+    {%- set ns.kind = kinds[section] -%}
+  {%- endif -%}
+  {%- if ns.kind -%}
+    {%- set prefix = page.url.split("/")[0] ~ "/" -%}
+    {%- for p in nav.pages if p.url.startswith(prefix) and p.url != prefix -%}
+      {%- set ns.seq = ns.seq + [p] -%}
+    {%- endfor -%}
+    {%- for p in ns.seq -%}{%- if p.url == page.url -%}
+      {%- set i = loop.index -%}
+      <nav class="cp-pager" aria-label="{{ ns.kind }} navigation">
+        {%- if i > 1 -%}{%- set prev = ns.seq[i - 2] -%}
+          <a class="cp-pager__prev" href="{{ prev.url | url }}" rel="prev" title="{{ prev.title }}">← {{ prev.title }}</a>
+        {%- else -%}<span></span>{%- endif -%}
+        <span class="cp-pager__count">{{ ns.kind }} {{ i }} of {{ ns.seq | length }}</span>
+        {%- if i < ns.seq | length -%}{%- set next = ns.seq[i] -%}
+          <a class="cp-pager__next" href="{{ next.url | url }}" rel="next" title="{{ next.title }}">{{ next.title }} →</a>
+        {%- else -%}<span></span>{%- endif -%}
+      </nav>
+    {%- endif -%}{%- endfor -%}
+  {%- endif -%}
+  {{ super() }}
+{% endblock %}

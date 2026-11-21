@@ -1,0 +1,98 @@
+/* Go brand colors: blue #00ADD8, dark blue #007D9C, light blue #5DC9E2, as on go.dev. Hover and accent use the same
+   blue as links.
+   Links follow go.dev: turquoise, not underlined, underlined on hover and focus without a change of color. */
+:root {
+  --md-primary-fg-color: #00add8;
+  --md-primary-fg-color--light: #5dc9e2;
+  --md-primary-fg-color--dark: #007d9c;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: #ffffffb3;
+  --md-accent-fg-color: #007d9c;
+  --md-accent-fg-color--transparent: #007d9c1a;
+  --md-accent-bg-color: #ffffff;
+}
+
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: #007d9c;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #007d9c;
+  --md-typeset-a-color: #50b7e0;
+  --md-accent-fg-color: #50b7e0;
+  --md-accent-fg-color--transparent: #50b7e01a;
+  --md-accent-bg-color: #000000;
+}
+
+/* Diagrams: Go blue outlines and actors instead of the accent color. */
+[data-md-color-scheme="default"] {
+  --md-mermaid-node-fg-color: #007d9c;
+  --md-mermaid-sequence-actor-border-color: #007d9c;
+  --md-mermaid-sequence-actorman-line-color: #007d9c;
+  --md-mermaid-sequence-number-bg-color: #007d9c;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-mermaid-node-fg-color: #50b7e0;
+  --md-mermaid-sequence-actor-border-color: #50b7e0;
+  --md-mermaid-sequence-actorman-line-color: #50b7e0;
+  --md-mermaid-sequence-number-bg-color: #50b7e0;
+}
+
+.md-typeset a {
+  text-decoration: none;
+}
+
+.md-typeset a:hover,
+.md-typeset a:focus {
+  color: var(--md-typeset-a-color);
+  text-decoration: underline;
+}
+
+/* Code inside a link keeps the link color, as on go.dev. */
+.md-typeset a code,
+.md-typeset a:hover code,
+.md-typeset a:focus code {
+  color: var(--md-typeset-a-color);
+}
+
+/* Navigation and table of contents: underline on hover instead of switching to the accent color. */
+.md-nav__link:hover,
+.md-nav__link:focus,
+.md-nav__link--active:hover {
+  color: var(--md-typeset-a-color);
+  text-decoration: underline;
+}
+
+/* The title is followed by the same gap as a section heading: 0.64 × 1.5625em (h2) = 0.5 × 2em (h1). */
+.md-typeset h1 {
+  margin-bottom: 0.5em;
+}
+
+/* Numbered browsing bar above pattern and anti-pattern pages. */
+.cp-pager {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1em;
+  align-items: center;
+  margin-bottom: 1em;
+  font-size: 0.7rem;
+}
+
+.cp-pager__count {
+  color: var(--md-default-fg-color--light);
+}
+
+.cp-pager__next {
+  text-align: right;
+}
+
+/* Properties under the lede: a two-column table without a header row. */
+.cp-props table thead {
+  display: none;
+}
+
+.cp-props table td:first-child {
+  font-weight: 700;
+  white-space: nowrap;
+}
