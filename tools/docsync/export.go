@@ -23,6 +23,9 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -49,6 +52,10 @@ const skillIntro = "# Go Concurrency Patterns\n\n" +
 	"- When reviewing code, go through the anti-pattern checklist and name the page for each finding.\n" +
 	"- Verify concurrent code with `go test -race`, and test timing with `testing/synctest`; see\n" +
 	"  `references/stdlib/synctest.md`.\n\n"
+
+// skillID is the name of the skill: its identifier in an HTTP catalog and the name given in SKILL.md, which a skill
+// directory should be named after.
+const skillID = "go-concurrency"
 
 const skillDescription = "Use when writing, reviewing, or designing Go code that uses goroutines, channels, sync, " +
 	"context, timers, or atomics: choosing a concurrency pattern, spotting anti-patterns (goroutine leaks, " +
@@ -314,7 +321,7 @@ func rewriteLinks(text, rel, out string) string {
 func skillIndex(st *site, pages map[string]string) string {
 	var b strings.Builder
 
-	b.WriteString("---\nname: Go Concurrency Patterns\ndescription: " + strconv.Quote(skillDescription) + "\n---\n\n")
+	b.WriteString("---\nname: " + skillID + "\ndescription: " + strconv.Quote(skillDescription) + "\n---\n\n")
 	b.WriteString(skillIntro)
 
 	if index, ok := pages["docs/index.md"]; ok {
@@ -537,4 +544,73 @@ func syncSkill(root string, files map[string]string, check bool) ([]string, erro
 	}
 
 	return stale, nil
+}
+
+// writeCatalog publishes the skill in dest as an HTTP skill catalog: dest/skill/index.json, and the files of the
+// skill in dest/skill/<skillID>/. The version in the index changes exactly when a file does, so clients refresh.
+func writeCatalog(root, dest string) error {
+	dir := filepath.Join(root, skillDir)
+
+	var names []string
+
+	err := filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+
+		rel, relErr := filepath.Rel(dir, p)
+		if relErr != nil {
+			return relErr
+		}
+
+		names = append(names, filepath.ToSlash(rel))
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if len(names) == 0 {
+		return fmt.Errorf("no skill in %s: run docsync sync first", dir)
+	}
+
+	slices.Sort(names)
+
+	sum := sha256.New()
+	target := filepath.Join(dest, skillDir)
+
+	if err = os.RemoveAll(target); err != nil { //nolint:gosec // dest is the output directory given on the command line
+		return err
+	}
+
+	for _, name := range names {
+		content, readErr := os.ReadFile(filepath.Join(dir, filepath.FromSlash(name))) //nolint:gosec // generated files
+		if readErr != nil {
+			return readErr
+		}
+
+		_, _ = fmt.Fprintf(sum, "%s\x00%d\x00", name, len(content))
+		_, _ = sum.Write(content)
+
+		out := filepath.Join(target, skillID, filepath.FromSlash(name))
+		if err = os.MkdirAll(filepath.Dir(out), 0o755); err != nil { //nolint:gosec // published files
+			return err
+		}
+
+		if err = os.WriteFile(out, content, 0o644); err != nil { //nolint:gosec // published files
+			return err
+		}
+	}
+
+	index, err := json.MarshalIndent(map[string]any{"skills": []any{map[string]any{
+		"name":    skillID,
+		"version": hex.EncodeToString(sum.Sum(nil))[:12],
+		"files":   names,
+	}}}, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(filepath.Join(target, "index.json"), append(index, '\n'), 0o644) //nolint:gosec // published
 }

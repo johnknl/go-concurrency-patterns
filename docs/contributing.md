@@ -68,6 +68,11 @@ guides, the pages, and the Detection sections of the anti-patterns, and `referen
 filled in. Diagrams, the properties markup and links outside the skill are removed or turned into text. Do not edit
 these files; change the pages, and `go tool docsync check` fails when the skill is out of date.
 
+The skill reaches users in two ways. `.claude-plugin/marketplace.json` makes the repository a Claude Code marketplace
+whose one plugin is `skill/`, without a `version`, so installed copies follow the commits.
+`go tool docsync catalog site` publishes the skill with the site as an HTTP skill catalog for OpenCode, with a version
+that changes exactly when a file does.
+
 ## Writing for the reader
 
 Readers come with a problem and want the code that solves it, its cost, and its limits. Write for readability, not

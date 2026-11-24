@@ -1,0 +1,23 @@
+{
+  "name": "go-concurrency-patterns",
+  "description": "A catalog of Go concurrency patterns and anti-patterns, as an agent skill.",
+  "owner": {
+    "name": "John Kleijn",
+    "url": "https://github.com/johnknl"
+  },
+  "plugins": [
+    {
+      "name": "go-concurrency",
+      "source": "./skill",
+      "description": "Go concurrency patterns, concepts, standard library guides, and an anti-pattern review checklist, with tested code.",
+      "author": {
+        "name": "John Kleijn"
+      },
+      "homepage": "https://johnknl.github.io/go-concurrency-patterns/",
+      "repository": "https://github.com/johnknl/go-concurrency-patterns",
+      "license": "MIT",
+      "keywords": ["go", "golang", "concurrency", "goroutines", "channels", "patterns", "anti-patterns"],
+      "category": "development"
+    }
+  ]
+}

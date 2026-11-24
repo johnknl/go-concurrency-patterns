@@ -48,18 +48,55 @@ func main() {
 
 ## Use as an agent skill
 
-`skill/` is the catalog as an agent skill for Claude Code, OpenCode, and other tools that read `SKILL.md` files:
-an index of the principles, the patterns, and an anti-pattern checklist, and the pages with their code in
-`references/`. The agent loads only the pages that fit the task. Link or copy the directory under the name you want
-the skill to have:
+The catalog is also an agent skill, `go-concurrency`: an index of the principles, the patterns, and an anti-pattern
+checklist, with the pages and their code in `references/`. The agent reads the index when you write or review Go
+concurrency code, and opens only the pages that fit. It is generated from the pages (`make docs`) and published in
+two ways that stay current.
+
+### Claude Code
+
+1. Add this repository as a marketplace and install the plugin:
+
+   ```bash
+   claude plugin marketplace add johnknl/go-concurrency-patterns
+   claude plugin install go-concurrency@go-concurrency-patterns
+   ```
+
+2. Check that it is there with `claude plugin list`. Claude loads the skill when a task matches its description, for
+   example "review this worker pool for concurrency bugs", or you can run it with `/go-concurrency:go-concurrency`.
+3. To get updates, run `claude plugin marketplace update go-concurrency-patterns` and then
+   `claude plugin update go-concurrency@go-concurrency-patterns`. The plugin has no fixed version, so it follows the
+   repository. For updates in the background, open `/plugin`, choose **Marketplaces**, select
+   `go-concurrency-patterns`, and turn on auto-update; it is off by default.
+
+### OpenCode
+
+1. Add the published skill catalog to `skills` in `~/.config/opencode/opencode.jsonc` (every project) or in an
+   `opencode.jsonc` in your project:
+
+   ```jsonc
+   {
+     "skills": ["https://johnknl.github.io/go-concurrency-patterns/skill/"]
+   }
+   ```
+
+   OpenCode reloads its configuration when the file changes; there is nothing to restart.
+2. The skill `go-concurrency` is now offered to the model when a task matches its description. To load it yourself,
+   mention `@go-concurrency` in your prompt.
+3. Updates come by themselves: the catalog has a version that changes exactly when a page does, and OpenCode
+   downloads it again when it differs.
+
+### By hand
+
+For these and other tools that read `SKILL.md` files, link or copy `skill/` under the name `go-concurrency` in a skills
+directory: `~/.claude/skills` or `.claude/skills` (read by Claude Code and OpenCode), or `~/.config/opencode/skills`
+or `.opencode/skills` (OpenCode).
 
 ```bash
-ln -s "$PWD/skill" ~/.claude/skills/go-concurrency      # Claude Code, for every project
-ln -s "$PWD/skill" .claude/skills/go-concurrency        # Claude Code and OpenCode, for one project
-ln -s "$PWD/skill" ~/.config/opencode/skills/go-concurrency   # OpenCode, for every project
+ln -s "$PWD/skill" ~/.claude/skills/go-concurrency
 ```
 
-The skill is generated from the pages by `make docs` and checked by `make docs-check`; do not edit it by hand.
+A link follows your checkout. A copy does not update.
 
 ## Development
 

@@ -1,5 +1,5 @@
 ---
-name: Go Concurrency Patterns
+name: go-concurrency
 description: "Use when writing, reviewing, or designing Go code that uses goroutines, channels, sync, context, timers, or atomics: choosing a concurrency pattern, spotting anti-patterns (goroutine leaks, sleeping to synchronize, closing from the wrong side, unbounded goroutines, ignored contexts), and structuring owner goroutines, pipelines, worker pools, rate limits, queues, and shutdown."
 ---
 

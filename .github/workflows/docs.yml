@@ -8,6 +8,7 @@ on:
       - mkdocs.yml
       - requirements.txt
       - "**/*.go"
+      - skill/**
       - .github/workflows/docs.yml
   workflow_dispatch:
 
@@ -36,6 +37,8 @@ jobs:
         run: go tool docsync check
       - run: pip install -r requirements.txt
       - run: mkdocs build --strict --site-dir site
+      - name: Publish the skill as an HTTP catalog
+        run: go tool docsync catalog site
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

@@ -23,8 +23,10 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -492,7 +494,7 @@ original: true
 
 	skillIndex := read(t, root, "skill/SKILL.md")
 	for _, want := range []string{
-		"---\nname: Go Concurrency Patterns\ndescription: \"Use when",
+		"---\nname: go-concurrency\ndescription: \"Use when",
 		"### 1. Clear ownership\n\nOne owner. See [Pipe](references/patterns/pipe.md).",
 		"- [Pipe](references/patterns/pipe.md): Connect stages.",
 		"### [Leaky](references/anti-patterns/leaky.md)",
@@ -510,7 +512,7 @@ original: true
 		Name        string `yaml:"name"`
 		Description string `yaml:"description"`
 	}
-	if err := yaml.Unmarshal([]byte(front), &meta); err != nil || meta.Name != "Go Concurrency Patterns" ||
+	if err := yaml.Unmarshal([]byte(front), &meta); err != nil || meta.Name != "go-concurrency" ||
 		!strings.HasPrefix(meta.Description, "Use when") {
 		t.Errorf("SKILL.md front matter does not parse: %v %+v", err, meta)
 	}
@@ -574,6 +576,57 @@ original: true
 	if err := run(root, true, nil); err != nil {
 		t.Fatalf("not idempotent: %v", err)
 	}
+
+	t.Run("publishes the skill as an HTTP catalog", func(t *testing.T) {
+		dest := t.TempDir()
+
+		if err := writeCatalog(root, dest); err != nil {
+			t.Fatal(err)
+		}
+
+		var index struct {
+			Skills []struct {
+				Name    string   `json:"name"`
+				Version string   `json:"version"`
+				Files   []string `json:"files"`
+			} `json:"skills"`
+		}
+
+		raw, err := os.ReadFile(filepath.Join(dest, "skill", "index.json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if err = json.Unmarshal(raw, &index); err != nil || len(index.Skills) != 1 {
+			t.Fatalf("index.json: %v %s", err, raw)
+		}
+
+		first := index.Skills[0]
+		if first.Name != "go-concurrency" || first.Version == "" || !slices.Contains(first.Files, "SKILL.md") ||
+			!slices.Contains(first.Files, "references/patterns/pipe.md") {
+			t.Errorf("index.json = %+v", first)
+		}
+
+		if _, err = os.Stat(filepath.Join(dest, "skill", "go-concurrency", "references", "patterns", "pipe.md")); err != nil {
+			t.Errorf("file not published: %v", err)
+		}
+
+		write("skill/references/patterns/pipe.md", read(t, root, "skill/references/patterns/pipe.md")+"changed\n")
+
+		again := t.TempDir()
+		if err = writeCatalog(root, again); err != nil {
+			t.Fatal(err)
+		}
+
+		raw2, _ := os.ReadFile(filepath.Join(again, "skill", "index.json"))
+		if string(raw2) == string(raw) {
+			t.Error("the version did not change with the content")
+		}
+
+		if err = run(root, false, nil); err != nil {
+			t.Fatal(err)
+		}
+	})
 
 	t.Run("a changed or leftover skill file is out of date", func(t *testing.T) {
 		original := read(t, root, "skill/references/patterns/pipe.md")

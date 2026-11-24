@@ -62,6 +62,8 @@
 //	docsync sync [file...]    rewrite the generated parts, of the given files or of all markdown files; for all
 //	                          files also the agent skill in skill/, generated from the pages
 //	docsync check [file...]   exit with an error when a generated part, or the skill, is out of date
+//	docsync catalog dir       publish the skill in dir as an HTTP skill catalog (dir/skill/index.json and the
+//	                          files in dir/skill/go-concurrency/), for clients such as OpenCode
 package main
 
 import (
@@ -77,8 +79,17 @@ import (
 )
 
 func main() {
+	if len(os.Args) == 3 && os.Args[1] == "catalog" {
+		if err := writeCatalog(".", os.Args[2]); err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, "docsync:", err)
+			os.Exit(1)
+		}
+
+		return
+	}
+
 	if len(os.Args) < 2 || (os.Args[1] != "sync" && os.Args[1] != "check") {
-		_, _ = fmt.Fprintln(os.Stderr, "usage: docsync sync|check [file...]")
+		_, _ = fmt.Fprintln(os.Stderr, "usage: docsync sync|check [file...] | catalog dir")
 		os.Exit(2)
 	}
 
