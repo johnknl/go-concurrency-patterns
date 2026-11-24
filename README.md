@@ -46,6 +46,21 @@ func main() {
 ```
 <!-- /code -->
 
+## Use as an agent skill
+
+`skill/` is the catalog as an agent skill for Claude Code, OpenCode, and other tools that read `SKILL.md` files:
+an index of the principles, the patterns, and an anti-pattern checklist, and the pages with their code in
+`references/`. The agent loads only the pages that fit the task. Link or copy the directory under the name you want
+the skill to have:
+
+```bash
+ln -s "$PWD/skill" ~/.claude/skills/go-concurrency      # Claude Code, for every project
+ln -s "$PWD/skill" .claude/skills/go-concurrency        # Claude Code and OpenCode, for one project
+ln -s "$PWD/skill" ~/.config/opencode/skills/go-concurrency   # OpenCode, for every project
+```
+
+The skill is generated from the pages by `make docs` and checked by `make docs-check`; do not edit it by hand.
+
 ## Development
 
 ```bash
@@ -53,8 +68,8 @@ make test         # vet and race tests
 make lint         # golangci-lint
 make vuln         # govulncheck
 make headers      # add the license header to new Go files
-make docs         # copy code from the packages into the markdown pages
-make docs-check   # fail when the pages are out of sync
+make docs         # copy code from the packages into the pages, and generate the skill
+make docs-check   # fail when the pages or the skill are out of sync
 make mutation     # mutation testing: operators (gremlins) and concurrency (tools/mutate)
 make docs-serve   # preview the site on http://localhost:8000 (needs Docker)
 make check        # everything CI runs

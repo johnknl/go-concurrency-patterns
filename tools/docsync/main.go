@@ -59,8 +59,9 @@
 //
 // Usage:
 //
-//	docsync sync [file...]    rewrite the generated parts, of the given files or of all markdown files
-//	docsync check [file...]   exit with an error when a generated part is out of date
+//	docsync sync [file...]    rewrite the generated parts, of the given files or of all markdown files; for all
+//	                          files also the agent skill in skill/, generated from the pages
+//	docsync check [file...]   exit with an error when a generated part, or the skill, is out of date
 package main
 
 import (
@@ -106,6 +107,8 @@ func run(root string, check bool, only []string) error {
 
 	var stale []string
 
+	rendered := map[string]string{}
+
 	for _, file := range files {
 		raw, readErr := os.ReadFile(file) //nolint:gosec // paths come from walking the repository
 		if readErr != nil {
@@ -122,6 +125,8 @@ func run(root string, check bool, only []string) error {
 			return fmt.Errorf("%s: %w", file, renderErr)
 		}
 
+		rendered[filepath.ToSlash(rel)] = updated
+
 		if updated == string(raw) {
 			continue
 		}
@@ -134,6 +139,19 @@ func run(root string, check bool, only []string) error {
 			}
 
 			_, _ = fmt.Fprintln(os.Stdout, "updated", file)
+		}
+	}
+
+	if len(only) == 0 {
+		skillStale, syncErr := syncSkill(root, exportSkill(st, rendered), check)
+		if syncErr != nil {
+			return syncErr
+		}
+
+		stale = append(stale, skillStale...)
+
+		if !check && len(skillStale) > 0 {
+			_, _ = fmt.Fprintln(os.Stdout, "updated", skillDir+"/", "("+strconv.Itoa(len(skillStale))+" files)")
 		}
 	}
 
@@ -158,7 +176,8 @@ func markdownFiles(root string) ([]string, error) {
 
 		if d.IsDir() {
 			name := d.Name()
-			if path != root && (strings.HasPrefix(name, ".") || name == "site" || name == "bin") {
+			skipped := strings.HasPrefix(name, ".") || name == "site" || name == "bin" || path == filepath.Join(root, skillDir)
+			if path != root && skipped {
 				return filepath.SkipDir
 			}
 

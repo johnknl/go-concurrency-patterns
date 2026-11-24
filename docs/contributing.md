@@ -61,6 +61,13 @@ concepts:
 On an anti-pattern, `concepts` lists the concepts it breaks. `docsync` checks that the declared concepts and the
 concept links in the text match, and generates the Used by and Violated by lists of each concept.
 
+## The agent skill
+
+`skill/` is generated from the pages by `go tool docsync sync`: `SKILL.md` indexes the principles, the concern
+guides, the pages, and the Detection sections of the anti-patterns, and `references/` has every page with its code
+filled in. Diagrams, the properties markup and links outside the skill are removed or turned into text. Do not edit
+these files; change the pages, and `go tool docsync check` fails when the skill is out of date.
+
 ## Writing for the reader
 
 Readers come with a problem and want the code that solves it, its cost, and its limits. Write for readability, not

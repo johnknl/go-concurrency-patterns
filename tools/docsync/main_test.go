@@ -27,6 +27,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 const fixture = `package p
@@ -344,6 +346,8 @@ It ignores [flow](../concepts/flow.md).
 
 ## Detection
 
+- Look at [Pipe](../patterns/pipe.md) and the [catalog](../catalog/purpose.md).
+
 ## Fixed by
 
 <!-- remedies -->
@@ -415,7 +419,8 @@ original: true
 <!-- /sources -->
 `)
 	write("docs/concepts/index.md", "<!-- catalog: concept -->\n<!-- /catalog -->\n<!-- catalog: concern level=2 -->\n<!-- /catalog -->\n")
-	write("docs/index.md", "<!-- catalog: purpose level=2 -->\n<!-- /catalog -->\n<!-- catalog: source id=book -->\n<!-- /catalog -->\n<!-- catalog: anti-pattern -->\n<!-- /catalog -->\n<!-- catalog: superseded -->\n<!-- /catalog -->\n")
+	write("docs/index.md", "# Home\n\n## Principles\n\n### 1. Clear ownership { #principle-ownership }\n\nOne owner. See [Pipe](patterns/pipe.md).\n\n"+
+		"## Finding your way\n\n<!-- catalog: purpose level=2 -->\n<!-- /catalog -->\n<!-- catalog: source id=book -->\n<!-- /catalog -->\n<!-- catalog: anti-pattern -->\n<!-- /catalog -->\n<!-- catalog: superseded -->\n<!-- /catalog -->\n")
 	write("docs/sources.md", "<!-- bibliography -->\n<!-- /bibliography -->\n")
 
 	if err := run(root, false, nil); err != nil {
@@ -465,6 +470,53 @@ original: true
 	if !strings.Contains(leaky, "- [Pipe](../patterns/pipe.md): Connect stages.") || strings.Contains(leaky, "| Scale |") ||
 		!strings.Contains(leaky, "| Violates | [Clear ownership](../index.md#principle-ownership) |") {
 		t.Errorf("remedies block wrong:\n%s", leaky)
+	}
+
+	skillPipe := read(t, root, "skill/references/patterns/pipe.md")
+	for _, want := range []string{
+		"# Pipe\n\nConnect stages.\n\n- **Also known as:** Chain, Line\n- **Purpose:** Data flow\n",
+		"> **Largely superseded.**\n> Use a loop.",
+		"const Max = 3",
+		"- [Doe and Roe (2020)](../sources.md#source-book), ch. 1",
+	} {
+		if !strings.Contains(skillPipe, want) {
+			t.Errorf("skill page lacks %q:\n%s", want, skillPipe)
+		}
+	}
+
+	for _, unwanted := range []string{"<!--", "<div", "title: Pipe", "(../catalog/", "mermaid"} {
+		if strings.Contains(skillPipe, unwanted) {
+			t.Errorf("skill page has %q:\n%s", unwanted, skillPipe)
+		}
+	}
+
+	skillIndex := read(t, root, "skill/SKILL.md")
+	for _, want := range []string{
+		"---\nname: Go Concurrency Patterns\ndescription: \"Use when",
+		"### 1. Clear ownership\n\nOne owner. See [Pipe](references/patterns/pipe.md).",
+		"- [Pipe](references/patterns/pipe.md): Connect stages.",
+		"### [Leaky](references/anti-patterns/leaky.md)",
+		"Violates: Clear ownership. Fixed by: [Pipe](references/patterns/pipe.md).",
+		"Look for:\n\n- Look at [Pipe](references/patterns/pipe.md) and the catalog.",
+	} {
+		if !strings.Contains(skillIndex, want) {
+			t.Errorf("SKILL.md lacks %q:\n%s", want, skillIndex)
+		}
+	}
+
+	front, _, _ := strings.Cut(strings.TrimPrefix(skillIndex, "---\n"), "\n---\n")
+
+	var meta struct {
+		Name        string `yaml:"name"`
+		Description string `yaml:"description"`
+	}
+	if err := yaml.Unmarshal([]byte(front), &meta); err != nil || meta.Name != "Go Concurrency Patterns" ||
+		!strings.HasPrefix(meta.Description, "Use when") {
+		t.Errorf("SKILL.md front matter does not parse: %v %+v", err, meta)
+	}
+
+	if got := read(t, root, "skill/references/principles.md"); !strings.HasPrefix(got, "# Principles\n") {
+		t.Errorf("principles wrong:\n%s", got)
 	}
 
 	flow := read(t, root, "docs/concepts/flow.md")
@@ -522,6 +574,39 @@ original: true
 	if err := run(root, true, nil); err != nil {
 		t.Fatalf("not idempotent: %v", err)
 	}
+
+	t.Run("a changed or leftover skill file is out of date", func(t *testing.T) {
+		original := read(t, root, "skill/references/patterns/pipe.md")
+
+		write("skill/references/patterns/pipe.md", original+"edited\n")
+
+		if err := run(root, true, nil); err == nil || !strings.Contains(err.Error(), "skill/references/patterns/pipe.md") {
+			t.Fatalf("changed file: got %v", err)
+		}
+
+		if err := run(root, false, nil); err != nil {
+			t.Fatal(err)
+		}
+
+		write("skill/references/patterns/old.md", "left over\n")
+
+		if err := run(root, true, nil); err == nil || !strings.Contains(err.Error(), "skill/references/patterns/old.md") {
+			t.Fatalf("leftover file: got %v", err)
+		}
+
+		if err := run(root, false, nil); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := os.Stat(filepath.Join(root, "skill", "references", "patterns", "old.md")); !os.IsNotExist(err) {
+			t.Fatalf("leftover file kept: %v", err)
+		}
+
+		if got := read(t, root, "skill/references/patterns/pipe.md"); got != original {
+			t.Fatalf("file not regenerated:\n%s", got)
+		}
+
+	})
 
 	t.Run("rejects unknown values", func(t *testing.T) {
 		write("docs/patterns/pipe.md", strings.Replace(page, "concerns: [backpressure]", "concerns: [nope]", 1))
